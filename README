@@ -1,0 +1,90 @@
+COPYDOWN (C) You
+All code related to Upstream and created by ISC-USENET
+Is released fully into the public domain
+
+Upstream Release 1 - June 17, 2012
+----------------------------------
+
+This is the initial release of Upstream, the ISC-USENET River uploader.
+Consider this software to be of ALPHA quality.
+
+[REQUIREMENTS]
+* Python 2.7
+* gevent 0.13.0 or later
+* python-yenc
+* par2
+
+
+[USAGE]
+usage: upstream.py [-h] -s SERVER [-o OUTPUT] [-u USERNAME] [-p PASSWORD]
+                   [-c CONNECTIONS] [-r] [-m META [META ...]]
+                   [-f FILEMETA [FILEMETA ...]] [-n NFO]
+                   [--filenfo FNFO [FNFO ...]] [--ssl] [--port PORT]
+                   [--subject SUBJECT] [-d DOMAIN] [-g GROUP]
+                   [--poster POSTER] [--articlesize ARTICLESIZE]
+                   [--segmentsize SEGMENTSIZE] [--parblocks PARBLOCKS]
+                   [--parthreads PARTHREADS]
+                   files [files ...]
+
+Upload river files to usenet
+
+positional arguments:
+  files                 Files to be added to river file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s SERVER, --server SERVER
+                        Usenet server to connect to
+  -o OUTPUT, --output OUTPUT
+                        Where to output river file (default is stdout)
+  -u USERNAME, --username USERNAME
+                        Usenet username to connect with
+  -p PASSWORD, --password PASSWORD
+                        Usenet password to connect with
+  -c CONNECTIONS, --connections CONNECTIONS
+                        Max connections to usenet
+  -r, --rlink           Create river link (currently always true)
+  -m META [META ...], --meta META [META ...]
+                        Metadata for river file (e.g. -m name="river"
+                        description="river")
+  -f FILEMETA [FILEMETA ...], --filemeta FILEMETA [FILEMETA ...]
+                        Metadata for file contained within river file (e.g. -f
+                        fileinriverfile.mp3/name="river"
+                        fileinriverfile.mp3/description="river")
+  -n NFO, --nfo NFO     NFO file to upload with this river
+  --filenfo FNFO [FNFO ...]
+                        NFO file to upload with a river file (e.g. --filenfo
+                        fileinriverfile.mp3=nfofile.nfo)
+  --ssl                 Connect to usenet with SSL
+  --port PORT           Port to connect to usenet with (default 119; 563 with
+                        SSL)
+  --subject SUBJECT     Subject in usenet articles
+  -d DOMAIN, --domain DOMAIN
+                        Domain in message IDs <mid@domain>
+  -g GROUP, --group GROUP
+                        Usenet newsgroup to post articles in
+  --poster POSTER       The from header in articles
+  --articlesize ARTICLESIZE
+                        The size of uploaded articles
+  --segmentsize SEGMENTSIZE
+                        Number of articles in a segment
+  --parblocks PARBLOCKS
+                        For 1/parblocks redundancy (4 parblocks is 25%
+                        redundancy)
+  --parthreads PARTHREADS
+                        Max number of par2 instances running at once (should
+                        be number of cores plus one)
+
+
+
+River2NZB Release 1 - June 17, 2012
+-----------------------------------
+
+This is the initial release of River2NZB, the ISC-USENET River to NZB converter.
+Consider this software to be of ALPHA quality.
+
+[REQUIREMENTS]
+* Python 2.7
+
+[USAGE]
+river2nzb.py riverfile.river > nzbfile.nzb
