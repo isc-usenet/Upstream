@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Upstream : Instructions for using Upstream" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Upstream</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/isc-usenet/Upstream">View on GitHub</a>
+
+          <h1 id="project_title">Upstream</h1>
+          <h2 id="project_tagline">Instructions for using Upstream</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/isc-usenet/Upstream/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/isc-usenet/Upstream/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>NOTE: Upstream is still in an ALPHA state. If you run into bugs or problems with the software, please create an
+issue on the github issue tracker.</p>
+
+<h2>Introduction</h2>
+
+<p>Upstream is a command-line uploader that's used to upload the data required to create a River file. It is gevent coroutine-based to allow for multiple articles to be uploaded at once. It also creates the required PAR2 files and uploads them at the same time to upload as fast as possible. The command line is fairly complicated, however allows for flexible River files, including the ability to define River-scoped metadata and file-scoped metadata (things like name, description). Both River-scoped and file-scoped NFOs
+can also be defined, and automatically uploaded as well. Multithreaded uploads are planned for the future, but are not top priority.
+Notable features of Upstream are:</p>
+
+<ul>
+<li>Uses gevent to upload articles in parallel on one core</li>
+<li>Flexible command line that can be used to set many different options for River files and the articles uploaded to Usenet</li>
+<li>Create River Links</li>
+<li>Set both River-scoped and file-scoped metadata</li>
+<li>Set both River-scoped and file-scoped NFO files, automatically uploading them as well</li>
+</ul><h2>Requirements</h2>
+
+<ul>
+<li>Python 2.7</li>
+<li>gevent</li>
+<li>python-yenc</li>
+</ul><h2>Downloading</h2>
+
+<p>As Upstream is currently in an ALPHA state, the only way to get it is to download a tarball of HEAD or clone from GitHub.</p>
+
+<p>If you know how to use git, clone from <a href="https://github.com/isc-usenet/Upstream.git">https://github.com/isc-usenet/Upstream.git</a></p>
+
+<p>Otherwise, download the HEAD tarball from <a href="https://github.com/isc-usenet/Upstream/tarball/master">https://github.com/isc-usenet/Upstream/tarball/master</a></p>
+
+<h2>Installing</h2>
+
+<p>As Upstream is currently in an ALPHA state, there is no method to install it. Enter the directory that Upstream resides in
+and run the command:
+<code>python2.7 upstream.py -h</code>
+This will give you a list of parameters that you can pass to Upstream.</p>
+
+<h2>Configuration</h2>
+
+<p>As Upstream is currently in an ALPHA state, there is stored configuration, meaning you have to pass all parameters to
+Upstream directly through the command line.</p>
+
+<h2>Usage</h2>
+
+<p>Using Upstream is fairly simple - the only required parameter is the "server" parameter. If your Usenet credentials require a username and password, those can also be entered through the parameters of the same name. SSL is also available, and if a port is not specified, the default Usenet SSL port will be set. The more technical parameters (articlesize, segmentsize, parblocks) are set to safe defaults and unless you know what you are doing, they should not be changed.</p>
+
+<h2>Examples</h2>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac -o myfile.river</code></p>
+
+<p>This will set your Usenet credentials and upload your file_to_upload.flac file to Usenet on port 119, referring to it in myfile.river
+The -s parameter is equivalent to --server, -u equivalent to --username, -p equivalent to --password and -o equivalent to --output</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac other_file_to_upload.flac -o myfiles.river</code></p>
+
+<p>This is the same as above, but puts another file into the River.</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac -o myfile.river -r</code></p>
+
+<p>The -r (or --rlink) parameter creates a River Link, which will be printed to screen, and also output to myfile.river.rlink (or output.river.rlink if -o is not specified)</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac -o myfile.river -m name="My Uploaded File" -r</code></p>
+
+<p>The -m (or --meta) parameter is used to set metadata within the river file, such as a human-readable name or description. Meta keys can contain any character that isn't the equals sign, and meta values can contain any character. It is recommended that keys are lowercase.</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac -o myfile.river -m name="My Uploaded File" -n file_to_upload.nfo</code></p>
+
+<p>The -n parameter (or --nfo) uploads an NFO file to usenet and adds an "nfo" key to the metadata with a reference to the uploaded NFO.
+If an "nfo" key is set in a -m parameter with -n also set, the -n will override the value.</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac -o myfile.river --ssl</code></p>
+
+<p>The --ssl parameter connects to the server with SSL (and changes the port to 563 if not set) and uploads encrypted.</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac -o myfile.river --subject "[MY RIVER] \"{name}\""</code></p>
+
+<p>The --subject parameter changes the default subject that is used in Usenet articles. The string {name} is replaced with the file name.</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac -o myfile.river -f file_to_upload.flac/name="My Uploaded File"</code></p>
+
+<p>The -f parameter (or --filemeta) is used to set file-scoped metadata. The key in this case cannot contain a slash or equal sign character, and the file must be the base name - that is, only the filename without any directory paths.</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac -o myfile.river --filenfo file_to_upload.flac=file_to_upload.nfo</code></p>
+
+<p>This is equivalent to the -n parameter, however it works on a file scope rather than a River scope. This means you can set individual NFOs to separate files.</p>
+
+<h2>Notes</h2>
+
+<p>Be aware that the --meta, --filemeta and --filenfo parameters are special in that they accept an infinite number of values until it either hits
+the end of the command line or hits another parameter. This means you cannot define any files right after one of these parameters
+without first putting a different parameter in front of it. As an example,</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword file_to_upload.flac -o myfile.river --filenfo file_to_upload.flac=file_to_upload.nfo</code></p>
+
+<p>will work perfectly fine, however</p>
+
+<p><code>python2.7 upstream.py -s news.usenethost.com -u myusername -p mypassword -o myfile.river --filenfo file_to_upload.flac=file_to_upload.nfo file_to_upload.flac</code></p>
+
+<p>will not, because Upstream will attempt to interpret the filename as a key-value combination.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Upstream maintained by <a href="https://github.com/isc-usenet">isc-usenet</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
