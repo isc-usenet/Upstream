@@ -204,7 +204,8 @@ def init_metadata():
         if not os.path.exists(TEMPDIR):
             os.mkdir(TEMPDIR)
         internal_files = []
-    meta = shelve.open(TEMPDIR + "/.metadata")
+    #meta = shelve.open(TEMPDIR + "/.metadata")
+    meta = {} # Resume support has been disabled in this release due
     for i in files:
         if not os.path.exists(i):
             logging.fatal("File %s does not exist" % i)
@@ -218,14 +219,15 @@ def init_metadata():
             meta[bn+"/segleft"] = range(fsize / segbytes + (1 if fsize % segbytes > 0 else 0))
             meta[bn+"/artleft"] = range(fsize / articlesize + (1 if fsize % articlesize > 0 else 0))
 
-def handle_segment(ifile, seg):
+def handle_segment(ffile, seg):
     global meta, par_pool, article_pool
+    ifile = os.path.basename(ffile)
     seg_articles = range(seg*segsize, seg*segsize+segsize)
     gart = []
     for i in seg_articles:
         if i in meta[ifile+"/artleft"]:
-            gart.append(article_pool.spawn(handle_article, ifile, seg, i))
-    par = par_pool.spawn(par_segment, ifile, seg)
+            gart.append(article_pool.spawn(handle_article, ffile, seg, i))
+    par = par_pool.spawn(par_segment, ffile, seg)
     gevent.joinall(gart)
            
 def run_par2(args):
@@ -237,17 +239,17 @@ def run_par2(args):
         d = p.stdout.read(2048)
         if d == '':
             break
-        #print d
     p.stdout.close()
            
-def par_segment(ifile, seg):
+def par_segment(ffile, seg):
     global meta, TEMPDIR, article_pool
+    ifile = os.path.basename(ffile)
     fsize = meta[ifile]
     byte_start = seg * segbytes
     byte_len = min(fsize-byte_start, segbytes)
-    mainfile = open(ifile)
+    mainfile = open(ffile)
     mainfile.seek(byte_start)
-    bn = os.path.basename(ifile)
+    bn = ifile
     parfilename = TEMPDIR + '/' + bn + ".%03d" % (seg)
     parfile = open(parfilename,'w')
     parfile.write(mainfile.read(byte_len))
@@ -277,7 +279,8 @@ def handle_par(ifile, seg, name):
     meta[ifile+"/par/"+str(seg)+"/"+os.path.basename(name)] = [article, crc32, bytes]
     os.unlink(name)
     
-def handle_article(ifile, seg, art):
+def handle_article(ffile, seg, art):
+    ifile = os.path.basename(ffile)
     fsize = meta[ifile]
     byte_start = art * articlesize
     byte_len = min(fsize-byte_start, articlesize)
@@ -289,8 +292,8 @@ def handle_article(ifile, seg, art):
     t = meta[ifile+'/artleft']
     t.remove(art)
     meta[ifile+'/artleft'] = t
-    meta.sync()
-    afile = open(ifile)
+    #meta.sync() # Resume support has been disabled, uncomment when re-enabled
+    afile = open(ffile)
     afile.seek(byte_start)
     fdata = afile.read(byte_len)
     afile.close()
@@ -377,7 +380,10 @@ def write_river():
         return xmlout
 
 def create_rlink(xmlfile):
-    bn = os.path.basename(output)
+    if not output:
+        bn = "output.rlink"
+    else:
+        bn = os.path.basename(output)
     yencdata = [0,0,0,0]
     data = bz2.compress(xmlfile)
     crc = "%08x" % (binascii.crc32(data) & 0xffffffff)
@@ -408,7 +414,7 @@ def create_rlink(xmlfile):
 def upload_nfo(nfo):
     nfofile = open(nfo).read()
     if len(nfofile) > articlesize:
-        print "ERROR: NFO file too large to fit in an article"
+        logging.error("ERROR: NFO file too large to fit in an article")
         return None
     yencdata = [0,0,0,0]
     article, _, _ = upload_article(nfofile, os.path.basename(nfo), yencdata, {})
@@ -443,7 +449,7 @@ def timer_bandwidth():
             if bn+'/artleft' in meta:
                 artdone += len(meta[bn+'/artleft'])
         artdone = arttotal - artdone
-        print "Uploading [%d/%d articles] [%s/s]" % (artdone, arttotal, human(bandwidth))
+        logging.info("Uploading [%d/%d articles] [%s/s]" % (artdone, arttotal, human(bandwidth)))
     
 
 def upload_files():
@@ -452,25 +458,31 @@ def upload_files():
     article_pool = pool.Pool(connections+10)
     segment_pool = pool.Pool()
     gsegs = []
-    print "Uploading articles and par files..."
+    logging.info("Uploading articles and par files...")
     for i in files:
         bn=os.path.basename(i)
         for j in meta[bn+'/segleft']:
-            segment_pool.spawn(handle_segment, bn, j)
+            segment_pool.spawn(handle_segment, i, j)
     for i in gsegs:
         i.start()
     segment_pool.join()
     par_pool.join()
     article_pool.join()
-    print "Articles uploaded."
-    print "Uploading river link..."
-    outfile = open(output,'w')
+    logging.info("Articles uploaded.")
+    logging.info("Uploading river link...")
+    if output == None:
+        outfile = sys.stdout
+    else:
+        outfile = open(output,'w')
     xmlfile = write_river()
     outfile.write(xmlfile)
     outfile.close()
-    print "River link uploaded."
+    logging.info("River link uploaded.")
     if rlink:
-        frlink = open(output+'.rlink', 'w')
+        if output == None:
+            frlink = open('output.river.rlink','w')
+        else:
+            frlink = open(output+'.rlink', 'w')
         outrlink = create_rlink(xmlfile)
         frlink.write(outrlink+'\n')
         logging.info("The rlink for this river file is %s" % outrlink)
@@ -506,7 +518,7 @@ if __name__ == '__main__':
     parser.add_argument('-u','--username', help="Usenet username to connect with", dest='username')
     parser.add_argument('-p','--password', help="Usenet password to connect with", dest='password')
     parser.add_argument('-c','--connections', help="Max connections to usenet", dest='connections', default=10, type=int)
-    parser.add_argument('-r', '--rlink', help="Create river link (currently always true)", dest='rlink', action='store_true', default=True)
+    parser.add_argument('-r', '--rlink', help="Create river link (currently always true)", dest='rlink', action='store_true', default=False)
     parser.add_argument('-m', '--meta', help="Metadata for river file (e.g. -m name=\"river\" description=\"river\")", dest='meta', nargs='+')
     parser.add_argument('-f', '--filemeta', help="Metadata for file contained within river file (e.g. -f fileinriverfile.mp3/name=\"river\" fileinriverfile.mp3/description=\"river\")", dest='filemeta', nargs='+')
     parser.add_argument('-n','--nfo', help="NFO file to upload with this river", dest='nfo')
@@ -548,14 +560,14 @@ if __name__ == '__main__':
     if ns.filemeta:
         for i in ns.filemeta:
             k, v = i.split('=', 1)
-            f, k = k.split('/', 1)
+            f, k = k.rsplit('/', 1)
             if not os.path.basename(f) in filemeta:
                 filemeta[os.path.basename(f)] = {k: v}
             else:
                 filemeta[os.path.basename(f)][k] = v
     if ns.nfo:
         if not os.path.exists(ns.nfo):
-            print >> stderr, "ERROR: File %s does not exist, nfo not added" % ns.nfo
+            logging.error("ERROR: File %s does not exist, nfo not added" % ns.nfo)
             nfo = None
         else:
             nfo = ns.nfo
@@ -564,15 +576,14 @@ if __name__ == '__main__':
         for i in ns.fnfo:
             f, n = i.split('=', 1)
             if not os.path.exists(n):
-                print >> stderr, "ERROR: File %s does not exist, nfo not added" % n
+                logging.error("ERROR: File %s does not exist, nfo not added" % n)
             filenfo[os.path.basename(f)] = n
     
-    #sys.exit(0)
     par = which('par2')
     if par == None:
         raise Exception, "Par2 not found in path. It is required for Upstream to function"
     else:
-        print "Found par2 at", par
+        logging.info("Found par2 at %s" % par)
     
     init_connections()
     init_metadata()
@@ -582,5 +593,6 @@ if __name__ == '__main__':
     gup.start()
     timer.start()
     gup.join()
-    meta.close()
+    #meta.close() # Resume support has been disabled, uncomment when re-enabled
     logging.info('Upload completed')
+
